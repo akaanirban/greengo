@@ -140,3 +140,14 @@ Run the unit tests:
 ```
 pytest -s
 ```
+
+
+## [0.1.0] - 07-22-2018
+### Added
+- Added `_check_group_exists` in greengo.py to check if a group already exists.
+- Added scripts for remote creation of required folders and deploment of certs and configs
+- Added function for Updating the Group Settings without creating it everytime.
+
+### Changed
+- Changed `create_group_version` to include diftionary methods for python3
+- There are some errors, when you use specific roles, then arter creation 'LambdaRole' is not saved in the json file. So whileremoving there is a cannot find role error. Fixed it.

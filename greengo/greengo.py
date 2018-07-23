@@ -1,4 +1,5 @@
-import os
+import os 
+import sys
 import errno
 import fire
 import json
@@ -58,7 +59,7 @@ class GroupCommands(object):
         self.state = _load_state()
 
     def create(self):
-        if self.state:
+        if self.state or self._check_group_exists():
             log.error("Previously created group exists. Remove before creating!")
             return False
 
@@ -80,7 +81,6 @@ class GroupCommands(object):
         self.state['Cores'] = cores
         self.state['CoreDefinition'] = core_def
         _update_state(self.state)
-
         # 3. Create Resources - policies for local and ML resource access.
         self.create_resources()
 
@@ -139,6 +139,54 @@ class GroupCommands(object):
             "Make sure GreenGrass Core is running, connected to network, "
             "and the certificates match.")
 
+    def update_deployment(self):
+        """Update an already deployed pipeline
+
+        TODO:
+            1. Looks if the group exists?
+            2. If exist does it have necessary stuff in it ?
+            3. If it already has a deployed config, what about the Lambda?
+            4. An Update lambda function? https://github.com/aws-samples/aws-greengrass-mini-fulfillment/blob/master/groups/lambda_setup.py
+            5. Update resources
+            6. Save the state file
+
+        """
+        if not self.state or not self._check_group_exists():
+            log.error("No previously created group exists. Please use \'create\' option to create a group")
+            return False
+
+        log.info("[BEGIN] updating group {0}".format(self.group['Group']['name']))
+
+        
+        """ASSUMPTIONS: 
+            1. I am expecting The group, policy, certs, config and Core definition exists
+            2. User will change only resources, subscriptions or lambda function associated 
+        """
+        
+        # 1. Create/ Update Resources - policies for local and ML resource access.
+        # We can reuse the create_resources function to update as well
+        self.remove_resources()
+        self.create_resources()
+        log.info("Updated Resources")
+
+        # 2. Create Lambda functions and function definitions
+        self.update_lambdas()
+        log.info("Updated Lambda")
+
+        # 3. Create subscriptions
+        self.remove_subscriptions()
+        self.create_subscriptions()
+
+        # 4. Add all the constituent parts to the Greengrass Group
+        self.create_group_version()
+
+        log.info("Reseting deployments forcefully, if they exist")
+        self._gg.reset_deployments(GroupId=self.state['Group']['Id'], Force=True)
+        
+        log.info("[END] updating group {0}".format(self.group['Group']['name']))
+
+
+
     def create_group_version(self):
 
         # Create a copy so that referencing non-existent fileds not create them in self.state
@@ -154,7 +202,14 @@ class GroupCommands(object):
             ResourceDefinitionVersionArn=state['Resources']['LatestVersionArn'],
         )
 
-        args = dict((k, v) for k, v in kwargs.iteritems() if v)
+        # Python > 3 has removed dict.iteritems()
+        # https://stackoverflow.com/a/30418498/8853476
+        
+        # Checks for system version before using iteritems
+        if int(sys.version_info[0])< 3:
+            args = dict((k, v) for k, v in kwargs.iteritems() if v)
+        else:
+            args = dict((k, v) for k, v in kwargs.items() if v)
 
         log.debug("Creating group version with settings:\n{0}".format(pretty(args)))
 
@@ -199,9 +254,9 @@ class GroupCommands(object):
                     log.warning("Role {0} already exists, reusing.".format(self._LAMBDA_ROLE_NAME))
                 else:
                     raise e
-
-            self.state['LambdaRole'] = rinse(role)
-            _update_state(self.state)
+################### UPDATED BY ANIRBAN  #######################################################################
+            # self.state['LambdaRole'] = rinse(role)
+            # _update_state(self.state)
         return self.state['LambdaRole']['Role']['Arn']
 
     def create_lambdas(self, update_group_version=True):
@@ -221,6 +276,12 @@ class GroupCommands(object):
             log.info("Creating Lambda function '{0}'".format(l['name']))
 
             role_arn = l['role'] if 'role' in l else self._default_lambda_role_arn()
+            
+################### UPDATED BY ANIRBAN  #######################################################################
+            role_details = self._iam.get_role(RoleName=role_arn.split('/')[-1])
+            self.state['LambdaRole'] = rinse(role_details)
+            _update_state(self.state)
+            
             log.info("Assuming role '{0}'".format(role_arn))
 
             zf = shutil.make_archive(
@@ -235,7 +296,7 @@ class GroupCommands(object):
                             Runtime='python2.7',
                             Role=role_arn,
                             Handler=l['handler'],
-                            Code=dict(ZipFile=f.read()),
+                            Code=dict(ZipFile=f.read()),         ## <<<------------- TO CHANGE TO S3 (https://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.create_function)
                             Environment=dict(Variables=l.get('environment', {})),
                             Publish=True
                         )
@@ -276,6 +337,9 @@ class GroupCommands(object):
 
         log.debug("Function definition list ready:\n{0}".format(pretty(functions)))
 
+
+        # Creating the function definition with necessary
+        # configurations in the greengrass client
         log.info("Creating function definition: '{0}'".format(self.name + '_func_def_1'))
         fd = self._gg.create_function_definition(
             Name=self.name + '_func_def_1',
@@ -297,6 +361,104 @@ class GroupCommands(object):
 
         log.info("Lambdas and function definition created OK!")
 
+    def update_lambdas(self, update_group_version=True):
+        if not self.group.get('Lambdas'):
+            log.info("Lambdas not defined. Use \'greengo create\' to create a deployment")
+            return
+
+        # if not(self.state and self.state.get('Lambdas')):
+        #     log.warning("Nothing to update, exiting!")
+        #     return
+
+        functions = []
+        old_lambda_state = self.state['Lambdas']
+        self.state['Lambdas'] = []
+        _update_state(self.state)
+
+        for l in self.group['Lambdas']:
+            log.info("Updating Lambda function '{0}'".format(l['name']))
+
+            role_arn = l['role'] if 'role' in l else self._default_lambda_role_arn()
+
+            role_details = self._iam.get_role(RoleName=role_arn.split('/')[-1])
+            self.state['LambdaRole'] = rinse(role_details)
+            _update_state(self.state)
+            log.info("Assuming role '{0}'".format(role_arn))
+
+            zf = shutil.make_archive(
+                os.path.join(MAGIC_DIR, l['name']), 'zip', l['package'])
+            log.debug("Lambda deployment Zipped to '{0}'".format(zf))
+
+            for retry in range(3):
+                try:
+                    with open(zf, 'rb') as f:
+                        lr = self._lambda.update_function_code(
+                            FunctionName=l['name'],
+                            ZipFile=f.read(),         ## <<<------------- TO CHANGE TO S3 (https://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.create_function)
+                            Publish=True
+                        )
+                        # Break from retry cycle if lambda is created
+                        break
+                except ClientError as e:  # Catch the right exception
+                    if "The role defined for the function cannot be assumed by Lambda" in str(e):
+                        # Function creation immediately after role creation fails with
+                        # "The role defined for the function cannot be assumed by Lambda."
+                        # See StackOverflow https://goo.gl/eTfqsS
+                        log.warning("We hit AWS bug: the role is not yet propogated."
+                                    "Taking 10 sec nap")
+                        sleep(10)
+                        continue
+                    else:
+                        raise(e)
+
+            lr['ZipPath'] = zf
+            self.state['Lambdas'].append(rinse(lr))
+            _update_state(self.state)
+            log.info("Lambda function '{0}' updated".format(lr['FunctionName']))
+
+            # Auto-created alias uses the version of just published function
+            alias = self._lambda.create_alias(
+                FunctionName=lr['FunctionName'],
+                Name=l.get('alias', 'default'),
+                FunctionVersion=lr['Version'],
+                Description='Created by greengo'
+            )
+            log.info("Lambda alias updated and published. FunctionVersion:'{0}', Arn:'{1}'".format(
+                alias['FunctionVersion'], alias['AliasArn']))
+
+            functions.append({
+                'Id': l['name'],
+                'FunctionArn': alias['AliasArn'],
+                'FunctionConfiguration': l['greengrassConfig']
+            })
+
+        log.debug("Function definition list ready:\n{0}".format(pretty(functions)))
+
+
+        # Creating the function definition with necessary
+        # configurations in the greengrass client
+        log.info("Creating function definition: '{0}'".format(self.name + '_func_def_1'))
+        fd = self._gg.create_function_definition(
+            Name=self.name + '_func_def_1',
+            InitialVersion={'Functions': functions}
+        )
+        self.state['FunctionDefinition'] = rinse(fd)
+        _update_state(self.state)
+
+        fd_ver = self._gg.get_function_definition_version(
+            FunctionDefinitionId=self.state['FunctionDefinition']['Id'],
+            FunctionDefinitionVersionId=self.state['FunctionDefinition']['LatestVersion'])
+
+        self.state['FunctionDefinition']['LatestVersionDetails'] = rinse(fd_ver)
+        _update_state(self.state)
+
+        if update_group_version:
+            log.info("Updating group version with new Lambdas...")
+            self.create_group_version()
+
+        log.info("Lambdas and function definition created OK!")
+
+
     def remove_lambdas(self):
         if not (self.state and self.state.get('Lambdas')):
             log.info("There seem to be nothing to remove.")
@@ -312,8 +474,16 @@ class GroupCommands(object):
             self.state.pop('FunctionDefinition')
             _update_state(self.state)
 
-        log.info("Deleting default lambda role '{0}'".format(self._LAMBDA_ROLE_NAME))
-        self._remove_default_lambda_role()
+###################### Updated by Anirban  ########################################################
+        """
+            IF the role name is the default on then only the lambda role will be removed only from the 
+            Greengrass Iot Core.
+        
+        """
+        if self.state['LambdaRole']['Role']['RoleName'] ==  self._LAMBDA_ROLE_NAME:
+            log.info("Deleting default lambda role '{0}'".format(self._LAMBDA_ROLE_NAME))
+            self._remove_default_lambda_role()
+        
         self.state.pop('LambdaRole')
         _update_state(self.state)
 
@@ -416,6 +586,7 @@ class GroupCommands(object):
 
         log.debug("Preparing Resources ...")
         res = []
+        # Create the request syntax for creating resources from Yaml 
         for r in self.group['Resources']:
             # Convert from a simplified form
             resource = dict(Name=r.pop('Name'), Id=r.pop('Id'))
@@ -423,7 +594,7 @@ class GroupCommands(object):
             res.append(resource)
 
         log.debug("Resources list is ready:\n{0}".format(pretty(res)))
-
+        
         name = self.name + '_resources'
         log.info("Creating resource definition: '{0}'".format(name))
         res_def = self._gg.create_resource_definition(
@@ -684,10 +855,30 @@ class GroupCommands(object):
         return role
 
     def _remove_default_lambda_role(self):
-        for p in self._iam.list_role_policies(RoleName=self._LAMBDA_ROLE_NAME)['PolicyNames']:
-            self._iam.delete_role_policy(RoleName=self._LAMBDA_ROLE_NAME, PolicyName=p)
+        try:
+            for p in self._iam.list_role_policies(RoleName=self._LAMBDA_ROLE_NAME)['PolicyNames']:
+                self._iam.delete_role_policy(RoleName=self._LAMBDA_ROLE_NAME, PolicyName=p)
 
-        self._iam.delete_role(RoleName=self._LAMBDA_ROLE_NAME)
+            self._iam.delete_role(RoleName=self._LAMBDA_ROLE_NAME)
+        except Exception as e:
+            log.error('Error while deleting default lambda role. {0}'.format(e))
+
+########################## Added by Anirban ###################################
+    def _check_group_exists(self):
+        """Checks to see if the group already exists in AWS
+            Args: 
+                GroupCommands object
+            
+            Returns:
+                True if the group exists else False
+
+        """
+        existing_groups = self._gg.list_groups()["Groups"]
+        for existing_group in existing_groups:
+            if self.group['Group']['name'] in existing_group["Name"]:
+                return True
+        return False
+
 
 ###############################################################################
 # UTILITY FUNCTIONS

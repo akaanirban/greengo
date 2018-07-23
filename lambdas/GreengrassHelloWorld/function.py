@@ -23,7 +23,7 @@ def run():
     else:
         client.publish(
             topic='hello/world',
-            payload='Hello from Greengrass Core running on platform: {}'.format(my_platform))
+            payload='Hello from *******sdmhfgas ,fkakjhf\n\n\n** Anirban\'s Greengrass Core running on platform: {}'.format(my_platform))
 
     # Asynchronously schedule this function to be run again in 5 seconds
     Timer(INTERVAL, run).start()
