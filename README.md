@@ -151,3 +151,8 @@ pytest -s
 ### Changed
 - Changed `create_group_version` to include diftionary methods for python3
 - There are some errors, when you use specific roles, then arter creation 'LambdaRole' is not saved in the json file. So whileremoving there is a cannot find role error. Fixed it.
+
+### TODO:
+--------- 
+- Right now, `update-deployment` works on changing the same lambda. Otherwise if we change the lambda and the do update, since I am using lambda.update instead of lambda.create , it tries to updatethe old lambda. Hence throws an error.
+- Also, need to automate the S3 bucket and rule creation. 
