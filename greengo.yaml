@@ -11,26 +11,19 @@ Lambdas:
   - name: GreengrassHelloWorld
     handler: function.handler
     package: lambdas/GreengrassHelloWorld
-    alias: dev7
-    role: 'arn:aws:iam::231968529044:role/nsl-edgecomputingrole' # Use an existing role instead of auto-created one
+    alias: dev
+    # role: 'arn:aws:iam::000000000000:role/base_lambda_role' # Use an existing role instead of auto-created one
     environment:
       foo: bar
     greengrassConfig:
-      MemorySize: 300000 # Kb, ask AWS why
-      Timeout: 50 # Sec
+      MemorySize: 128000 # Kb, ask AWS why
+      Timeout: 10 # Sec
       Pinned: True # Set True for long-lived functions
       Environment:
         AccessSysfs: False
-        ResourceAccessPolicies:
-           - ResourceId: musicdirectory
-             Permission: 'ro'
-           - ResourceId: imagedirectory
-             Permission: 'ro'
-           - ResourceId: statisticsdirectory
-             Permission: 'ro'
-           - ResourceId: squeezenet_model
-             Permission: 'rw'
-
+        # ResourceAccessPolicies:
+          # - ResourceId: 1_path_to_input
+          #   Permission: 'rw'
         Variables:
            name: value
 
@@ -39,41 +32,18 @@ Subscriptions:
     Subject: hello/world
     Target: cloud
   - Source: cloud
-    Subject: hello/device
+    Subject: hello/world
     Target: Lambda::GreengrassHelloWorld
 
 Resources:
     # Resource as defined at http://boto3.readthedocs.io/en/latest/reference/services/greengrass.html#Greengrass.Client.create_resource_definition_version
-  - Name: musicdirectory
-    Id: musicdirectory
+  - Name: path_to_input
+    Id: resource_1_path_to_input
     LocalVolumeResourceData:
-      SourcePath: /home/pi/Music/Audiofiles
-      DestinationPath: /home/pi/Music/mountedDirectory
+      SourcePath: /images
+      DestinationPath: /input
       GroupOwnerSetting:
         AutoAddGroupOwner: True
-
-  - Name: imagedirectory
-    Id: imagedirectory
-    LocalVolumeResourceData:
-      SourcePath: /home/pi/Pictures/Samples
-      DestinationPath: /home/pi/Pictures/mountedDirectory
-      GroupOwnerSetting:
-        AutoAddGroupOwner: True
-
-  - Name: statisticsdirectory
-    Id: statisticsdirectory
-    LocalVolumeResourceData:
-      SourcePath: /home/pi/AWS/Statistics
-      DestinationPath: /home/pi/AWS/mountedStatistics
-      GroupOwnerSetting:
-        AutoAddGroupOwner: True
-
-  - Name: squeezenet_model
-    Id: squeezenet_model
-    S3MachineLearningModelResourceData:
-      DestinationPath: /greengrass-machine-learning/mxnet/squeezenet/
-      S3Uri: https://s3-us-west-2.amazonaws.com/nslmachinelearningmodels/squeezenet.zip
-
 
 Devices: # not implemented
   - name: ml_take2_thing_1

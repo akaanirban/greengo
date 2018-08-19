@@ -1,6 +1,7 @@
 # Boilerplate for AWS IoT Greengrass
 [![Build Status](https://travis-ci.org/dzimine/greengo.svg?branch=master)](https://travis-ci.org/dzimine/greengo)
 ![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)
+![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)
 [![PyPI version](https://badge.fury.io/py/greengo.svg)](https://badge.fury.io/py/greengo)
 
 <img src="https://github.com/dzimine/greengo/blob/master/misc/greengo.png?raw=true" width="50px"> Greengo: a starter project to bring up (and clean-up!) AWS Greengrass setup for play and profit. If you followed the [GreenGrass Getting Started Guide](https://docs.aws.amazon.com/greengrass/latest/developerguide/gg-gs.html), here you find it automated, as code.
@@ -23,9 +24,8 @@ Inspired by [aws-iot-elf (Extremely Low Friction)](https://github.com/awslabs/aw
 Install `greengo` from PyPI:
 
 ```
-$ pip install greengo
+$ pip install https://github.com/akaanirban/greengo.git/zipball/master
 ```
-
 Manually [*] download GreenGrassCore binary and place it in the `./downloads` directory.
 Sign in to the AWS Management Console, navigate to the AWS IoT console,
 and download the AWS Greengrass
@@ -126,7 +126,7 @@ Please pay forward: PR a patch to whatever broke for you to prevent it from happ
 Clone the project, set up your environment, install dependencies and setup `greengo` CLI in dev mode:
 
 ```
-$ git clone https://github.com/dzimine/greengo.git
+$ git clone https://github.com/akaanirban/greengo.git
 $ cd greengo
 $ virtualenv venv
 
@@ -140,6 +140,21 @@ Run the unit tests:
 ```
 pytest -s
 ```
+## [0.1.1] - 08-19-2018
+### Added
+- Added `update_deployment` in greengo.py to update the deployment in the device.
+	* either for `full_pipeline_flag` for which everything is reset
+	* or `reuse_lambda` for which the same lambda is being used instead of creating one
+
+- Added `update_lambdas` in greengo.py to update the definition of lambda function and add in state.
+- Added `reuse_lambdas` in greengo.py to reuse the definition of lambda function and add in state.
+- Added `create_topic_rule` and `delete_topic_rule` in greengo.py to create and delete topic rules and add in state.
+- Added `create_s3_buckets` and `delete_s3_buckets` in greengo.py to create and delete s3 buckets and add in state.
+
+### Changed
+- Updated `remove_lambdas` to fix the issue of role name being removed.
+- Updated `create_lambdas` to fix issue of role name not not updated in state when existing role used.
+
 
 
 ## [0.1.0] - 07-22-2018

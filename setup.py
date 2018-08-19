@@ -15,9 +15,9 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords=['AWS', 'IoT', 'Greengrass', 'Lambda'],
-    url='http://github.com/dzimine/greengo',
-    author='Dmitri Zimine',
-    author_email='dz_removethis@stackstorm.com',
+    url='http://github.com/akaanirban/greengo',
+    author='Dmitri Zimine, Anirban Das',
+    author_email='dz_removethis@stackstorm.com, anirban.das.rpi@gmail.com',
     license='MIT',
     packages=['greengo'],
     install_requires=[
