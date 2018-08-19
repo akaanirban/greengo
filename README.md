@@ -24,7 +24,7 @@ Inspired by [aws-iot-elf (Extremely Low Friction)](https://github.com/awslabs/aw
 Install `greengo` from PyPI:
 
 ```
-$ pip install https://github.com/akaanirban/greengo.git/zipball/master
+$ pip install git+https://github.com/akaanirban/greengo.git
 ```
 Manually [*] download GreenGrassCore binary and place it in the `./downloads` directory.
 Sign in to the AWS Management Console, navigate to the AWS IoT console,
