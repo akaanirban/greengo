@@ -17,7 +17,11 @@ Inspired by [aws-iot-elf (Extremely Low Friction)](https://github.com/awslabs/aw
 * A computer with Linux/MacOS, Python, git (dah!)
 * [Vagrant](https://www.vagrantup.com/docs/installation/) with [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
 * AWS CLI [installed](http://docs.aws.amazon.com/cli/latest/userguide/installing.html) and [configured](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). Consider using [named profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html).
-
+* Associate a role with the greengrass user
+```
+aws greengrass associate-service-role-to-account --role-arn <your-role-arn> 
+```
+such that your role contains atleast the `AWSGreengrassResourceAccessRolePolicy` or `AWSGreengrassFullAccess`
 
 ## Set it Up
 
@@ -140,6 +144,14 @@ Run the unit tests:
 ```
 pytest -s
 ```
+
+## [0.1.1] - 08-20-2018
+### Added
+- 
+
+### Changed
+- Updated `create_s3_buckets` to fix the issue where `us-east-1` buckets cannot be created with locationconstraints
+
 ## [0.1.1] - 08-19-2018
 ### Added
 - Added `update_deployment` in greengo.py to update the deployment in the device.
@@ -170,4 +182,6 @@ pytest -s
 ### TODO:
 --------- 
 - Right now, `update-deployment` works on changing the same lambda. Otherwise if we change the lambda and the do update, since I am using lambda.update instead of lambda.create , it tries to updatethe old lambda. Hence throws an error.
-- Also, need to automate the S3 bucket and rule creation. 
+- Also, need to automate the S3 bucket and rule creation.
+- On setting upp a Topic Rule, the Role needs to be updated manually once in order to route the messages to S3 bucket.
+Need to make it automatic such that the Role is updated with the policy for the Topic 

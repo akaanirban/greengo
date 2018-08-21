@@ -43,7 +43,7 @@ create_directories(){
 	
 	for (( i = 0 ; i < $list_length ; i++ )); do
 		echo "creating the ${GGDeviceDirectories[$i]} directory"
-		x=`sshpass -p $pass ssh pi@$ip "mkdir ${GGDeviceDirectories__actualpath[$i]} && sudo chmod 777 ${GGDeviceDirectories__actualpath[$i]} && mkdir ${GGDeviceDirectories__mountpath[$i]} && sudo chmod 777 ${GGDeviceDirectories__mountpath[$i]}"`
+		x=`sshpass -p $pass ssh pi@$ip "mkdir -p ${GGDeviceDirectories__actualpath[$i]} && sudo chmod 777 ${GGDeviceDirectories__actualpath[$i]} && mkdir ${GGDeviceDirectories__mountpath[$i]} && sudo chmod 777 ${GGDeviceDirectories__mountpath[$i]}"`
 	done
 	echo "Done"
 }

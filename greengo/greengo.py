@@ -1037,7 +1037,11 @@ class GroupCommands(object):
 
 		log.debug("S3 buckets list is ready:\n{0}".format(pretty(buckets)))
 		for bucket in buckets:
-			self._s3.create_bucket(Bucket=bucket['Bucket'], CreateBucketConfiguration=bucket['CreateBucketConfiguration'])
+			# cannot create us-east-1 bucket with location constraint error Fix
+			if 'us-east-1' in bucket['CreateBucketConfiguration']['LocationConstraint']:
+				self._s3.create_bucket(Bucket=bucket['Bucket'])
+			else:
+				self._s3.create_bucket(Bucket=bucket['Bucket'], CreateBucketConfiguration=bucket['CreateBucketConfiguration'])
 
 		self.state['ResultS3Buckets'] = buckets
 		_update_state(self.state)
