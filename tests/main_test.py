@@ -82,7 +82,7 @@ class GroupCommandTest(unittest.TestCase):
         self.gg.create_group_version()
 
         args, kwargs = m.call_args
-        self.assertEqual(len(kwargs), 5)  # TODO: Refine expected kwarg count
+        self.assertEqual(len(kwargs), 6)  # TODO: Refine expected kwarg count
 
     def test_create_group_version_subset(self):
         self.gg.state = greengo.State(state.copy())
@@ -94,7 +94,7 @@ class GroupCommandTest(unittest.TestCase):
         self.gg.create_group_version()
 
         args, kwargs = m.call_args
-        self.assertEqual(len(kwargs), 3)  # TODO: Refine expected kwarg count
+        self.assertEqual(len(kwargs), 4)  # TODO: Refine expected kwarg count
 
     def test_create_resources(self):
         self.gg.group.pop('Resources')
@@ -106,6 +106,17 @@ class GroupCommandTest(unittest.TestCase):
 
         self.gg.remove_resources()
         self.assertFalse(self.gg.state.get('Resources'), "Resources shall be removed")
+
+    def test_create_loggers(self):
+        self.gg.group.pop('Loggers')
+        self.gg.create_loggers()
+
+    def test_remove_loggers(self):
+        self.gg._gg.delete_resource_definition = MagicMock(return_value=state['Loggers'])
+        self.gg.state = greengo.State(state.copy())
+
+        self.gg.remove_loggers()
+        self.assertFalse(self.gg.state.get('Loggers'), "Loggers shall be removed")
 
 
 @patch('greengo.greengo.rinse', rinse)
@@ -129,7 +140,6 @@ class LambdaTest(unittest.TestCase):
         error = ClientError(
             error_response={'Error': {'Code': 'EntityAlreadyExists'}},
             operation_name='CreateRole')
-        print "I am here indeed"
 
         self.gg._iam.create_role = MagicMock(side_effect=error)
         self.gg._default_lambda_role_arn()  # Doesn't blow up

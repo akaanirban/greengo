@@ -1,12 +1,12 @@
-# Boilerplate for AWS IoT Greengrass
+# Infra as Code for AWS IoT Greengrass
 [![Build Status](https://travis-ci.org/dzimine/greengo.svg?branch=master)](https://travis-ci.org/dzimine/greengo)
 ![Python 2.7](https://img.shields.io/badge/python-2.7-blue.svg)
 ![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)
+![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)
 [![PyPI version](https://badge.fury.io/py/greengo.svg)](https://badge.fury.io/py/greengo)
 
-<img src="https://github.com/dzimine/greengo/blob/master/misc/greengo.png?raw=true" width="50px"> Greengo: a starter project to bring up (and clean-up!) AWS Greengrass setup for play and profit. If you followed the [GreenGrass Getting Started Guide](https://docs.aws.amazon.com/greengrass/latest/developerguide/gg-gs.html), here you find it automated, as code.
+<img src="https://github.com/dzimine/greengo/blob/master/misc/greengo.png?raw=true" width="50px"> Greengo: a tool, and a starter boilerplate project to bring up (and clean-up!) AWS Greengrass setup for play and profit. If you followed the [GreenGrass Getting Started Guide](https://docs.aws.amazon.com/greengrass/latest/developerguide/gg-gs.html), here you find it automated, as code.
 
-> Work In Progress !
 
 Describe your Greengrass group in `group.yaml`, write Lambda functions and device clients, provision Greengrass Core in Vagrant VM, deploy, and clean up.
 
@@ -63,9 +63,22 @@ Yeah, manual sucks... I will automate it later. Or, submit your PR!
     ```
     $ greengo deploy
     ```
+
 4. Check that everything works - see the ["Check" section](#check-the-deployment)  below.
 
 5. **Profit !**
+
+    Work on it: create, change or remove Lambda functions, subscriptions, resources, and then update Greengrass. 
+
+    ```
+    $ greengo update
+    ```
+
+    Apply your changes by deploying it again:
+    
+    ```
+    $ greengo deploy
+    ```
 
 6. Clean-up when done playing.
 
@@ -144,6 +157,11 @@ Run the unit tests:
 ```
 pytest -s
 ```
+
+## [0.1.1] - 04-30-2019
+### Added
+- Merged all the upstream changes from `dzmine`'s repo.
+- There appears to be a problem with the path set for the `config` file creation w.r.t the path for the `create_root_key` function which creates the root certificate and sets the `caPath` in the config. It appears that the existing upstream code saved the certificate as `root-CA.crt` but the install guide and other resources look for the resource by the file name `root.ca.pem`. In any case this is fixed to `root.ca.pem`.
 
 ## [0.1.1] - 08-20-2018
 ### Added
